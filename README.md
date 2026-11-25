@@ -27,9 +27,11 @@ Vouch is a VS Code extension (Cursor-compatible) that treats **human review as c
 
 ```
  src/auth/service.ts
-   ✓ 18 │  async function login(email, password) {       ← reviewed, teal gutter check
-     19 │    const user = await this.users.find(email)
-   ⚠ 42 │  async function refresh(token) {               ← dismissed: code changed since review
+   ▌ 18 │  async function login(email, password) {       ← reviewed 18-23: one teal pill
+   ▌ 19 │    const user = await this.users.find(email)
+   ▌ 20 │    ...
+   ▌ 23 │  }
+   ▌ 42 │  async function refresh(token) {               ← dismissed: code changed since review
 ```
 
 ```
@@ -62,7 +64,7 @@ AI writes a large and growing share of the code in most repositories. Review is 
 | ✓ **Reviewed / dismissed / ambiguous / unreviewed** | Render-time statuses tied to exact text AND location - never a stale cached flag, never a guess                                              |
 | 📍 **Location-bound reviews**                       | A review attests to code _in its context_: identical text moved to another function, or duplicated, never silently keeps a green mark        |
 | 📊 **Honest coverage**                              | Reviewed lines ÷ all tracked lines, rolled up per folder and workspace-wide; `.vouchignore` shapes the denominator                           |
-| 🔎 **Gutter + CodeLens + hover**                    | See status at the line, an inline `✓ Reviewed by …` lens, and a full per-reviewer timeline on hover                                          |
+| 🔎 **Gutter + CodeLens + hover**                    | See status across the whole reviewed span, an inline `✓ Reviewed by …` lens, and a full per-reviewer timeline on hover                       |
 | 🧭 **Coverage sidebar**                             | A file tree with per-file/per-folder percentages and a **Reviewers** section per engineer                                                    |
 | 🕰️ **Timeline & diff**                              | Jump back to any past review; diff the code against what was reviewed                                                                        |
 | 🔁 **Re-review & revoke**                           | Re-attest changed code or revoke a review — as append-only tombstones                                                                        |
@@ -92,7 +94,7 @@ or use **Extensions → ⋯ → Install from VSIX…**.
 1. Open a git repository.
 2. Run **`Vouch: Initialize in workspace`** from the command palette. This creates `.vouch/config.json` and adds a `merge=union` hint for `.vouch/reviews/**` to `.gitattributes`.
 3. Read some code. Select the lines you reviewed and run **`Vouch: Review selected lines`** (also on the editor's right-click **Vouch** submenu). Add an optional comment.
-4. A teal ✓ appears in the gutter, and a `✓ Reviewed by you, just now` CodeLens sits above the range.
+4. A teal pill appears in the gutter, spanning every line of the range, and a `✓ Reviewed by you, just now` CodeLens sits above it.
 5. Open the **Vouch** view in the activity bar for workspace-wide coverage — an honest per-file/per-folder tree and a **Reviewers** section.
 
 > **Tip** — `Vouch: Review enclosing function` / `…enclosing class` snap the attestation to a symbol (when a language server is available); `Vouch: Review entire file` attests the whole document.
@@ -103,12 +105,12 @@ or use **Extensions → ⋯ → Install from VSIX…**.
 
 Every attested range is in exactly one state, computed **at render time** — status is never stored, because a cached status rots the instant the code moves and conflicts across merges.
 
-| Status         |  Gutter  | Meaning                                                                                                                                                                                                       |
-| -------------- | :------: | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Reviewed**   |  ✓ teal  | Current text hashes identically to what was reviewed, in the location that was reviewed. Nothing has changed since a human read it.                                                                           |
-| **Dismissed**  | ⚠ orange | A record exists, but the text changed since review — even a whitespace or comment edit (Vouch hashes exact text) — or it moved out of its reviewed context. Re-review or diff to see what changed.            |
-| **Ambiguous**  | ? amber  | The reviewed text now matches more than one place (or its recorded location cannot be verified) and no signal can prove which copy was reviewed. Vouch never guesses: click **Resolve** to pin the right one. |
-| **Unreviewed** | _(none)_ | No record at all. Absence is itself the signal: no one has vouched for this yet.                                                                                                                              |
+| Status         |         Gutter          | Meaning                                                                                                                                                                                                       |
+| -------------- | :---------------------: | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Reviewed**   | `▌` teal, rounded ends  | Current text hashes identically to what was reviewed, in the location that was reviewed. Nothing has changed since a human read it.                                                                           |
+| **Dismissed**  | `▌` orange, square ends | A record exists, but the text changed since review — even a whitespace or comment edit (Vouch hashes exact text) — or it moved out of its reviewed context. Re-review or diff to see what changed.            |
+| **Ambiguous**  |    `▌` amber, dashed    | The reviewed text now matches more than one place (or its recorded location cannot be verified) and no signal can prove which copy was reviewed. Vouch never guesses: click **Resolve** to pin the right one. |
+| **Unreviewed** |        _(none)_         | No record at all. Absence is itself the signal: no one has vouched for this yet.                                                                                                                              |
 
 ### Location binding
 
@@ -149,7 +151,7 @@ One honest caveat: if the SAME person reviews the SAME file on two branches, tho
 
 ## Surfaces
 
-- **Gutter** — a ✓ / ⚠ / ? on the first line of each reviewed / dismissed / ambiguous range.
+- **Gutter** — a pill spanning every line of a reviewed / dismissed / ambiguous range, in the margin next to the line numbers. The shape of the ends says which: rounded teal for reviewed, square orange for dismissed, dashed amber for ambiguous. Codes or records that fold away take the pill with them; markers never appear on unreviewed lines.
 - **CodeLens** — an inline `✓ Reviewed by <name>, <time>` above reviewed code, with **Re-review** and **Diff** actions; click the reviewer text to open the **Timeline**. Flips to `⚠ Dismissed (changed since review) — re-review` when the text changes, and to `? Ambiguous (matches multiple locations) - resolve` when it needs a human pick. Toggle with [`vouch.codeLens.enabled`](#settings).
 - **Hover** — the full per-reviewer timeline for a range, with commit links and quick actions.
 - **Sidebar** — the **Vouch** activity-bar view: an honest coverage tree plus a **Reviewers** section listing each engineer (`12 reviews · 5 files`), expandable to the files they reviewed.
