@@ -120,7 +120,7 @@
         {
           "id": "vouch",
           "title": "Vouch",
-          "icon": "media/reviewed.svg"
+          "icon": "media/vouch.svg"
         }
       ]
     },
